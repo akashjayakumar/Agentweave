@@ -6,7 +6,8 @@ from app.db.crud import create_notebook, get_notebooks
 from app.schemas.notebook import NotebookCreate, NotebookResponse
 from app.rag.ingest import ingest_chunks, chunk_text
 from app.rag.retrieve import retrieve_chunks
-
+from app.agents.reader import reader_agent
+from app.agents.explainer import explainer_agent
 
 router = APIRouter()
 
@@ -54,3 +55,21 @@ def search(
     q: str,
 ):
     return retrieve_chunks(notebook_id, q)
+
+@router.get("/{notebook_id}/ask")
+def ask_notebook(
+    notebook_id: str,
+    q: str,
+):
+    """
+    Ask a question against a notebook.
+    """
+    chunks = retrieve_chunks(notebook_id, q)
+    points = reader_agent(chunks)
+    answer = explainer_agent(points)
+
+    return {
+        "question": q,
+        "answer": answer,
+        "sources": chunks,
+    }
