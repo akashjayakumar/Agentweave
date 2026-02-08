@@ -13,6 +13,10 @@ from pypdf import PdfReader
 from app.rag.ingest import ingest_chunks, chunk_text
 from app.scrapers.rbi import scrape_rbi
 from app.agents.change_detector import detect_changes
+from app.agents.change_detector import detect_changes
+from app.agents.impact import analyze_impact
+from app.agents.summarizer import summarize_changes
+
 
 
 router = APIRouter()
@@ -136,4 +140,23 @@ def detect_notebook_changes(
         "total_chunks": len(new_chunks),
         "changed_chunks": len(changes),
         "changes": changes,
+    }
+
+@router.post("/{notebook_id}/analyze")
+def analyze_notebook_update(
+    notebook_id: str,
+    text: str,
+):
+    from app.rag.ingest import chunk_text
+
+    new_chunks = chunk_text(text)
+
+    changes = detect_changes(notebook_id, new_chunks)
+    impact = analyze_impact(changes)
+    summary = summarize_changes(changes)
+
+    return {
+        "changed_chunks": changes,
+        "impact": impact,
+        "summary": summary,
     }
