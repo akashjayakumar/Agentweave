@@ -17,3 +17,5 @@ pypdf==4.0.1
 chromadb==0.4.24
 sentence-transformers==2.6.1
 numpy==1.26.4   # 🔒 REQUIRED for ChromaDB compatibility
+beautifulsoup4==4.12.3
+requests==2.31.0
