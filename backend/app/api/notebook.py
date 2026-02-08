@@ -12,6 +12,7 @@ from fastapi import UploadFile, File
 from pypdf import PdfReader
 from app.rag.ingest import ingest_chunks, chunk_text
 from app.scrapers.rbi import scrape_rbi
+from app.agents.change_detector import detect_changes
 
 
 router = APIRouter()
@@ -119,4 +120,20 @@ def ingest_rbi(
     return {
         "pages_ingested": len(pages),
         "chunks_ingested": len(chunks),
+    }
+
+@router.post("/{notebook_id}/detect-changes")
+def detect_notebook_changes(
+    notebook_id: str,
+    text: str,
+):
+    from app.rag.ingest import chunk_text
+
+    new_chunks = chunk_text(text)
+    changes = detect_changes(notebook_id, new_chunks)
+
+    return {
+        "total_chunks": len(new_chunks),
+        "changed_chunks": len(changes),
+        "changes": changes,
     }
