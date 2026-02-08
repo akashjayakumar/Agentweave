@@ -8,6 +8,11 @@ from app.rag.ingest import ingest_chunks, chunk_text
 from app.rag.retrieve import retrieve_chunks
 from app.agents.reader import reader_agent
 from app.agents.explainer import explainer_agent
+from fastapi import UploadFile, File
+from pypdf import PdfReader
+from app.rag.ingest import ingest_chunks, chunk_text
+from app.scrapers.rbi import scrape_rbi
+
 
 router = APIRouter()
 
@@ -72,4 +77,46 @@ def ask_notebook(
         "question": q,
         "answer": answer,
         "sources": chunks,
+    }
+
+@router.post("/{notebook_id}/upload-pdf")
+def upload_pdf(
+    notebook_id: str,
+    file: UploadFile = File(...),
+):
+    reader = PdfReader(file.file)
+
+
+    text = ""
+    for page in reader.pages:
+        text += page.extract_text() or ""
+
+
+    chunks = chunk_text(text)
+    ingest_chunks(notebook_id, chunks)
+
+
+    return {
+        "filename": file.filename,
+        "chunks_ingested": len(chunks),
+        }
+
+@router.post("/{notebook_id}/scrape-rbi")
+def ingest_rbi(
+    notebook_id: str,
+):
+    pages = scrape_rbi()
+
+
+    all_text = ""
+    for page in pages:
+        all_text += page["title"] + "\n"
+
+    chunks = chunk_text(all_text)
+    ingest_chunks(notebook_id, chunks)
+
+
+    return {
+        "pages_ingested": len(pages),
+        "chunks_ingested": len(chunks),
     }
